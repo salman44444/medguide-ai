@@ -1,7 +1,174 @@
-:root {
-  --max-width: 1100px;
-  --border-radius: 12px;
-  --font-mono: ui-monospace, Menlo, Monaco, "Cascadia Mono", "Segoe UI Mono",
-    "Roboto Mono", "Oxygen Mono", "Ubuntu Monospace", "Source Code Pro",
-    "Fira Mono", "Droid Sans Mono", "Courier New", monospace;
+/* Global styles */
+body {
+  font-family: 'Roboto', sans-serif;
+  margin: 0;
+  padding: 0;
+  background: #f4f7f6;
+}
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+header {
+  background: #180612;
+  color: rgb(244, 241, 241);
+  padding: 20px;
+  text-align: center;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+header h1 {
+  margin: 0;
+}
+
+nav {
+  display: flex;
+  justify-content: center;
+  background: #333;
+  padding: 10px 0;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+nav a {
+  color: white;
+  text-decoration: none;
+  padding: 10px 20px;
+  font-size: 16px;
+}
+
+nav a:hover {
+  background: #575757;
+  border-radius: 5px;
+}
+
+button {
+  background: #ba1d8b;
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 16px;
+  transition: background 0.3s ease;
+}
+
+button:hover {
+  background: #46e6e9;
+}
+
+footer {
+  background: #0b090a;
+  color: rgb(238, 233, 233);
+  padding: 10px 0;
+  text-align: center;
+  margin-top: 20px;
+}
+
+section {
+  margin: 20px 0;
+  padding: 20px;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+h2 {
+  color: #333;
+}
+
+.chatbox {
+  border: 1px solid #eab514;
+  padding: 15px;
+  border-radius: 8px;
+  background: rgb(229, 182, 28);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+  position: relative;
+}
+
+.chatbox-header {
+  font-weight: bold;
+  margin-bottom: 10px;
+}
+
+.chatbox-messages {
+  max-height: 300px;
+  overflow-y: auto;
+  margin-bottom: 10px;
+}
+
+.message {
+  margin-bottom: 10px;
+}
+
+.message.user {
+  text-align: right;
+}
+
+.message.ai {
+  text-align: left;
+}
+
+.chatbox-input {
+  display: flex;
+}
+
+input[type="text"] {
+  flex: 1;
+  padding: 10px;
+  margin-right: 10px;
+  border-radius: 4px;
+  border: 1px solid #ddd;
+}
+
+input[type="text"]:focus {
+  border-color: #c825c0;
+  outline: none;
+}
+
+button {
+  flex-shrink: 0;
+}
+
+form {
+  display: flex;
+  flex-direction: column;
+}
+
+form label {
+  margin: 10px 0 5px;
+}
+
+footer p {
+  margin: 0;
+}
+
+.login-section {
+  background: white;
+  border-radius: 8px;
+  padding: 20px;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+  margin: 20px auto;
+  width: 100%;
+  max-width: 400px;
+}
+
+.login-section h2 {
+  margin-top: 0;
+}
+
+.section-small {
+  min-height: 200px; /* Adjust as needed */
+}
+
+.section-medium {
+  min-height: 300px; /* Adjust as needed */
+}
+
+.section-large {
+  min-height: 400px; /* Adjust as needed */
 }
