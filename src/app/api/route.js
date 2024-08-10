@@ -1,78 +1,80 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { OpenAI } from 'openai';
-import { PineconeClient } from '@pinecone-database/pinecone';
+import { Pinecone as PineconeClient } from "@pinecone-database/pinecone";
+// import { HuggingFaceTransformersEmbeddings } from "@langchain/community/embeddings/hf_transformers";
+import {PineconeStore} from "@langchain/pinecone"
+//import { PineconeVectorStore } from 'langchain';
+import OpenAI from 'openai';
 
-const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
+//loading environment variables
+
 const PINECONE_API_KEY = process.env.PINECONE_API_KEY;
-const PINECONE_ENVIRONMENT = process.env.PINECONE_ENVIRONMENT;
+const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
 
-const openai = new OpenAI({
-  apiKey: OPENAI_API_KEY,
-});
+//-------------------------------------------------------------------
 
-const pinecone = new PineconeClient({
-  apiKey: PINECONE_API_KEY,
-  environment: PINECONE_ENVIRONMENT,
-});
+const pinecone = new PineconeClient()
+
+const index = pinecone.Index('docs-medical');
+/*
+const textSplitter = new RecursiveCharacterTextSplitter({
+  chunkSize: 1000,
+  chunkOverlap: 200,
+});*/
+//--------------------------------------------------------------------
+// Embedding Model Initilization
+let embeddingModel;
+async function initializeEmbeddingModel() {
+  const { HuggingFaceTransformersEmbeddings } = await import("@langchain/community/embeddings/hf_transformers");
+  embeddingModel = new HuggingFaceTransformersEmbeddings({
+    model: "Xenova/all-MiniLM-L6-v2",
+  });
+}
+await initializeEmbeddingModel();
+// const embeddingModel = new HuggingFaceTransformersEmbeddings(
+//  {
+//   model: "Xenova/all-MiniLM-L6-v2",
+//  }
+// );
 
 // Retrieve docs and embeddings from Pinecone
-async function retrieveDocuments(query) {
-  const index = pinecone.Index('medguide-ai');
-  const { data: { embedding } } = await openai.embeddings.create({
-    input: query,
-    model: 'text-embedding-ada-002',
-  });
+// const vectorStore = new PineconeVectorStore(index, {
+//   embedder: embeddingModel,
+// });
+const vectorStore= await PineconeStore.fromExistingIndex(embeddingModel,{pineconeIndex:index,
+maxConcurrency:5});
+//------------------------------------------------------------------------
 
-  const results = await index.query({
-    vector: embedding,
-    topK: 2,
-  });
-
-  return results.matches.map(match => match.metadata);
-}
-
-// Handle incoming requests
 export async function POST(req) {
   try {
     const body = await req.json();
-    const messages = body.messages || [];
-    const userInput = messages[messages.length - 1]?.content || '';
+    const query = body.query || '';
+    //--------------------------------------
+    //Retriving Docs based on query
+    const results = await vectorStore.similaritySearch(query, { k: 5 });
 
-    const relevantDocs = await retrieveDocuments(userInput);
-    const context = relevantDocs.map(doc => doc.content).join('\n');
-
-    const prompt = `You are an AI chatbot assistant for hospitals. 
-Use 'knowledge' instead of context in your responses. 
-Never make up answers, if unsure, say: 'I am not sure, let me connect you with a health practitioner'.
-Only answer questions related to the context, if the question is out of scope, say: 'I am not sure, 
-let me connect you with a healthcare practitioner'.
-Answer based on the context provided:\n\nContext:\n${context}\n\nUser: ${userInput}\nAI:`;
-
-    // Get response from OpenAI
-    const responseStream = openai.completions.create({
-      model: 'text-davinci-003',
-      prompt,
-      max_tokens: 150,
-      temperature: 0.7,
-      stream: true,
+    //Set up OpenRouter Client
+    const openai = new OpenAI({
+      apiKey: OPENROUTER_API_KEY,
+      baseURL: 'https://openrouter.ai/api/v1',
     });
 
-    let aiResponse = '';
+    //----------------------------------------------------
+    //Generating Prompt with retrieved context
+    const context = results.map((doc) => doc.metadata.text).join('\n\n');
+    const prompt = `You are an assistant for answering medical questions...\n\n${context}\n\nQuestion: ${query}`;
 
-    // Stream response from OpenAI
-    const readableStream = new ReadableStream({
-      async start(controller) {
-        for await (const chunk of responseStream) {
-          aiResponse += chunk.choices[0].text;
-          controller.enqueue(new TextEncoder().encode(chunk.choices[0].text));
-        }
-        controller.close();
-      },
+    //----------------------------------------------------
+    //Getting resposne from OpenRouter
+    const resposne = await openai.createChatCompletion({
+      model: 'meta-llama/llama-3.1-8b-instruct:free',
+      messages: [{ role: 'user', content: prompt }],
     });
 
-    return new NextResponse(readableStream);
+    //------------------------------------------------------
+    //sending response back to client
+    return NextResponse.json({ answer: resposne.choices[0].message.content });
   } catch (error) {
     console.error('Error handling request:', error);
-    return new NextResponse(JSON.stringify({ error: error.message }), { status: 500 });
+    return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
