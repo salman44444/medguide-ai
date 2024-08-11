@@ -1,18 +1,15 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-    webpack: (config, { isServer }) => {
-      if (isServer) {
-        // Exclude native modules from being bundled by Webpack
-        config.externals = [
-          ...config.externals,
-          '@xenova/transformers',
-          'onnxruntime-node',
-        ];
-      }
+  // (Optional) Export as a standalone site
+  // See https://nextjs.org/docs/pages/api-reference/next-config-js/output#automatically-copying-traced-files
+  output: 'standalone', // Feel free to modify/remove this option
   
-      return config;
-    },
-  };
+  // Indicate that these packages should not be bundled by webpack
+  experimental: {
+      serverComponentsExternalPackages: ['sharp', 'onnxruntime-node'],
+  },
+};
+
   
-  export default nextConfig;
+export default nextConfig;
   
